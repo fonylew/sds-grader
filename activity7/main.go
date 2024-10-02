@@ -47,102 +47,80 @@ var encryptedServiceAccountJSON []byte
 func main() {
 	currentTime := time.Now()
 	log.Println("Current Timestamp: " + currentTime.Format(time.RFC3339))
-	check := true
 
 	// 1. check Docker Network
-	if err := checkNetwork(networkName); err != nil {
-		log.Printf(errorPrefix+"%v\n", err)
-		check = false
-	} else {
-		log.Printf(successPrefix+"Network %s exists.\n", networkName)
-	}
+	result := []bool{checkResult(checkNetwork(networkName), "Network exists.")}
 
 	// 2. check Docker Container
 	containerNames := []string{"webapp", "todo-service", "notification-service", "redis", "api-gateway"}
-	if err := checkRunningContainers(containerNames); err != nil {
-		log.Printf(errorPrefix+"%v\n", err)
-		check = false
-	} else {
-		log.Println(successPrefix + "All specified containers are running.")
-	}
+	result = append(result, checkResult(checkRunningContainers(containerNames), "All specified containers are running."))
 
 	// 3. check Todo Webapp
-	if err := checkTodoWebapp(pageURL, scriptURL); err != nil {
-		log.Printf(errorPrefix+"%v\n", err)
-		check = false
-	}
+	result = append(result, checkResult(checkTodoWebapp(pageURL, scriptURL), ""))
 
 	// 4. check API Gateway
-	if !checkHTTPStatus(localhost8000, http.StatusNotFound) {
-		check = false
-		log.Println(errorPrefix + "Please make sure that you set up services behind api-gateway.")
-	}
-	if !checkHTTPStatus(localhost9000, http.StatusNotFound) {
-		check = false
-		log.Println(errorPrefix + "Please make sure that you expose ports only webapp and api-gateway.")
-	}
+	result = append(result, checkResult(checkHTTPStatus(localhost8000, http.StatusNotFound, "Please make sure that you set up services behind api-gateway."), ""))
+	result = append(result, checkResult(checkHTTPStatus(localhost9000, http.StatusNotFound, "Please make sure that you expose ports only webapp and api-gateway."), ""))
 
 	// 5. check Todo Service
-	if !checkHTTPStatus(todoServiceURL, http.StatusOK) {
-		log.Println(errorPrefix + "Todo-service was not found. Please check your api-gateway")
-		check = false
-	} else {
-		if err := sendPostRequest(todoServiceURL, check); err != nil {
-			log.Printf(errorPrefix+"Could not send a POST request to todo-service; %v\n", err)
-			check = false
-		}
-		log.Println(successPrefix + "Todo-service found with api-gateway.")
+	result = append(result, checkResult(checkHTTPStatus(todoServiceURL, http.StatusOK, "Todo-service was not found. Please check your api-gateway"), ""))
+	if result[len(result)-1] {
+		result = append(result, checkResult(sendPostRequest(todoServiceURL, allTrue(result)), "Todo-service found with api-gateway."))
 	}
 
 	// 6. check Notification Service
-	if !checkHTTPStatus(notificationURL, http.StatusOK) {
-		log.Println(errorPrefix + "Notification-service was not found. Please check your api-gateway")
-		check = false
-	} else {
-		log.Println(successPrefix + "Notification-service found with api-gateway.")
-	}
+	result = append(result, checkResult(checkHTTPStatus(notificationURL, http.StatusOK, "Notification-service was not found. Please check your api-gateway"), "Notification-service found with api-gateway."))
 
-	log.Printf("Result: %t\n", check)
+	finalResult := allTrue(result)
+	log.Printf("Result: %t\n", finalResult)
 
-	if check {
+	if finalResult {
 		log.Printf("🎉 Looks good! Please enter your StudentID and Full name below\n")
 		id, name := collectUserInfo()
 		hostName, user, osFamily, version, up, ip, pub := collectMachineInfo()
 
 		acc, err := decryptJSON([]byte(notificationURL[0:32]))
-		if err != nil {
-			log.Fatalf("Failed to decrypt JSON: %v", err)
-		}
+		handleError(err, "Failed to decrypt JSON")
 
 		ctx := context.Background()
 		pubsubClient, err := pubsub.NewClient(ctx, project, option.WithCredentialsJSON(acc))
-		if err != nil {
-			log.Fatalf("Failed to create Pub/Sub client: %v", err)
-		}
+		handleError(err, "Failed to create Pub/Sub client")
 		defer pubsubClient.Close()
-
-		// Create a message that matches the BigQuery schema
-		message := Message{
-			Field1:  currentTime,
-			Field2:  id,
-			Field3:  name,
-			Field4:  hostName,
-			Field5:  user,
-			Field6:  osFamily,
-			Field7:  version,
-			Field8:  up,
-			Field9:  ip,
-			Field10: pub,
-		}
+		message := createMessage(currentTime, id, name, hostName, user, osFamily, version, up, ip, pub)
 
 		// Publish the message to the Pub/Sub topic
-		if err := publishMessage(ctx, pubsubClient, topic, message); err != nil {
-			log.Fatalf(errorPrefix+"Failed to publish message: %v .. PLEASE TRY AGAIN 🙏", err)
-		}
+		pub_status := publishMessage(ctx, pubsubClient, topic, message)
+		handleError(pub_status, "Failed to publish message")
 
 		log.Println("🎉🎉🎉 Congratulations! You have completed the activity 🎉🎉🎉")
 		log.Printf("⚠️ Don't forget! you still need to submit your assignment via MyCourseVille ⚠️\n")
 	}
+}
+
+func checkResult(err error, passMessage string) bool {
+	if err != nil {
+		log.Printf("%s%v\n", errorPrefix, err)
+		return false
+	}
+	if passMessage != "" {
+		log.Printf("%s%s\n", successPrefix, passMessage)
+	}
+	return true
+}
+
+func handleError(err error, message string) {
+	if err != nil {
+		log.Fatalf("%s: %v", message, err)
+	}
+}
+
+func allTrue(arr []bool) bool {
+	for _, v := range arr {
+		if !v {
+			return false
+		}
+	}
+	return true
 }
 
 func checkNetwork(networkName string) error {
@@ -180,8 +158,12 @@ func checkTodoWebapp(pageURL, scriptURL string) error {
 		return fmt.Errorf("error checking todo webapp content: %v", err)
 	}
 
-	if !titleFound || !checkHTTPStatus(pageURL, http.StatusOK) {
+	if err = checkHTTPStatus(pageURL, http.StatusOK, ""); err != nil {
 		return fmt.Errorf("todo webapp was not found")
+	}
+
+	if !titleFound {
+		return fmt.Errorf("todo webapp title was not found")
 	}
 
 	if !scriptFound {
@@ -278,23 +260,23 @@ func decryptJSON(key []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-func checkHTTPStatus(url string, expectedStatus int) bool {
+func checkHTTPStatus(url string, expectedStatus int, errorMsg string) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		if strings.Contains(err.Error(), "refused") && expectedStatus == http.StatusNotFound {
-			return true
+			return nil
 		}
 		log.Printf(spacePrefix+errorPrefix+"Error checking URL %s: %v\n", url, err)
-		return false
+		return fmt.Errorf(errorMsg)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == expectedStatus {
 		log.Printf(spacePrefix+successPrefix+"URL %s returns %d.\n", url, expectedStatus)
-		return true
+		return nil
 	} else {
 		log.Printf(spacePrefix+errorPrefix+"URL %s does not return %d. Status code: %d\n", url, expectedStatus, resp.StatusCode)
-		return false
+		return fmt.Errorf(errorMsg)
 	}
 }
 
@@ -331,6 +313,21 @@ type Message struct {
 	Field8  int       `json:"uptime"`
 	Field9  string    `json:"ip"`
 	Field10 string    `json:"pub_ip"`
+}
+
+func createMessage(currentTime time.Time, id int, name, hostName, user, osFamily, version string, up int, ip, pub string) Message {
+	return Message{
+		Field1:  currentTime,
+		Field2:  id,
+		Field3:  name,
+		Field4:  hostName,
+		Field5:  user,
+		Field6:  osFamily,
+		Field7:  version,
+		Field8:  up,
+		Field9:  ip,
+		Field10: pub,
+	}
 }
 
 func publishMessage(ctx context.Context, client *pubsub.Client, topicName string, message Message) error {
