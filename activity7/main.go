@@ -1,15 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/host"
 	"golang.org/x/net/html"
 )
 
@@ -28,7 +34,7 @@ const (
 
 func main() {
 	currentTime := time.Now()
-	log.Println(successPrefix + "Current Timestamp: " + currentTime.Format(time.RFC3339))
+	log.Println("Current Timestamp: " + currentTime.Format(time.RFC3339))
 	check := true
 
 	// 1. check Docker Network
@@ -84,6 +90,14 @@ func main() {
 	}
 
 	log.Printf("Result: %t\n", check)
+
+	if check {
+		log.Printf("🎉 Looks good! Please enter your StudentID and Full name below\n")
+		_, _ = collectUserInfo()
+		collectMachineInfo()
+		log.Println("🎉🎉🎉 Congratulations! You have completed the activity 🎉🎉🎉")
+		log.Printf("⚠️ Don't forget! you still need to submit your assignment via MyCourseVille ⚠️\n")
+	}
 }
 
 func checkNetwork(networkName string) error {
@@ -236,4 +250,67 @@ func sendPostRequest(url string, check bool) error {
 	}
 
 	return nil
+}
+
+func collectUserInfo() (int, string) {
+	reader := bufio.NewReader(os.Stdin)
+	var studentID int
+	var err error
+	for {
+		fmt.Print("👉 StudentID: ")
+		studentIDStr, _ := reader.ReadString('\n')
+		studentIDStr = strings.TrimSpace(studentIDStr)
+
+		studentID, err = strconv.Atoi(studentIDStr)
+		if err == nil {
+			break
+		}
+		log.Println(errorPrefix + "Invalid StudentID. Please enter a valid integer.")
+	}
+
+	fmt.Print("👉 Full Name (TH): ")
+	fullName, _ := reader.ReadString('\n')
+	fullName = strings.TrimSpace(fullName)
+	return studentID, fullName
+}
+func collectMachineInfo() {
+	hostInfo, _ := host.Info()
+	ip, _ := getLocalIP()
+	publicIP, _ := getPublicIP()
+
+	fmt.Printf("Hostname: %s\n", hostInfo.Hostname)
+	fmt.Printf("Username: %s\n", os.Getenv("USER"))
+	fmt.Printf("OS: %s\n", hostInfo.OS)
+	fmt.Printf("OS Version: %s\n", hostInfo.PlatformVersion)
+	fmt.Printf("Uptime: %d seconds\n", hostInfo.Uptime)
+	fmt.Printf("IP address: %s\n", ip)
+	fmt.Printf("Public address: %s\n", publicIP)
+}
+
+func getLocalIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("no IP address found")
+}
+
+func getPublicIP() (string, error) {
+	resp, err := http.Get("https://api.ipify.org?format=text")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	ip, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(ip), nil
 }
