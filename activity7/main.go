@@ -89,6 +89,7 @@ func main() {
 	} else {
 		if err := sendPostRequest(todoServiceURL, check); err != nil {
 			log.Printf(errorPrefix+"Could not send a POST request to todo-service; %v\n", err)
+			check = false
 		}
 		log.Println(successPrefix + "Todo-service found with api-gateway.")
 	}
@@ -280,7 +281,7 @@ func decryptJSON(key []byte) ([]byte, error) {
 func checkHTTPStatus(url string, expectedStatus int) bool {
 	resp, err := http.Get(url)
 	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") && expectedStatus == http.StatusNotFound {
+		if strings.Contains(err.Error(), "refused") && expectedStatus == http.StatusNotFound {
 			return true
 		}
 		log.Printf(spacePrefix+errorPrefix+"Error checking URL %s: %v\n", url, err)
