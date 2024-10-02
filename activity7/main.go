@@ -48,52 +48,55 @@ func main() {
 	currentTime := time.Now()
 	log.Println("Current Timestamp: " + currentTime.Format(time.RFC3339))
 
-	// 1. check Docker Network
-	result := []bool{checkResult(checkNetwork(networkName), "Network exists.")}
-
-	// 2. check Docker Container
-	containerNames := []string{"webapp", "todo-service", "notification-service", "redis", "api-gateway"}
-	result = append(result, checkResult(checkRunningContainers(containerNames), "All specified containers are running."))
-
-	// 3. check Todo Webapp
-	result = append(result, checkResult(checkTodoWebapp(pageURL, scriptURL), ""))
-
-	// 4. check API Gateway
-	result = append(result, checkResult(checkHTTPStatus(localhost8000, http.StatusNotFound, "Please make sure that you set up services behind api-gateway."), ""))
-	result = append(result, checkResult(checkHTTPStatus(localhost9000, http.StatusNotFound, "Please make sure that you expose ports only webapp and api-gateway."), ""))
-
-	// 5. check Todo Service
-	result = append(result, checkResult(checkHTTPStatus(todoServiceURL, http.StatusOK, "Todo-service was not found. Please check your api-gateway"), ""))
-	if result[len(result)-1] {
-		result = append(result, checkResult(sendPostRequest(todoServiceURL, allTrue(result)), "Todo-service found with api-gateway."))
-	}
-
-	// 6. check Notification Service
-	result = append(result, checkResult(checkHTTPStatus(notificationURL, http.StatusOK, "Notification-service was not found. Please check your api-gateway"), "Notification-service found with api-gateway."))
+	result := checkAllServices()
 
 	finalResult := allTrue(result)
 	log.Printf("Result: %t\n", finalResult)
 
 	if finalResult {
-		log.Printf("🎉 Looks good! Please enter your StudentID and Full name below\n")
-		id, name := collectUserInfo()
-		hostName, user, osFamily, version, up, ip, pub := collectMachineInfo()
+		handleSuccess(currentTime)
+	}
+}
 
-		acc, err := decryptJSON([]byte(notificationURL[0:32]))
-		handleError(err, "Failed to decrypt JSON")
+func checkAllServices() []bool {
+	result := []bool{checkResult(checkNetwork(networkName), "Network exists.")}
+	containerNames := []string{"webapp", "todo-service", "notification-service", "redis", "api-gateway"}
+	result = append(result, checkResult(checkRunningContainers(containerNames), "All specified containers are running."))
+	result = append(result, checkResult(checkTodoWebapp(pageURL, scriptURL), ""))
+	result = append(result, checkResult(checkHTTPStatus(localhost8000, http.StatusNotFound, "Please make sure that you set up services behind api-gateway."), ""))
+	result = append(result, checkResult(checkHTTPStatus(localhost9000, http.StatusNotFound, "Please make sure that you expose ports only webapp and api-gateway."), ""))
+	result = append(result, checkResult(checkHTTPStatus(todoServiceURL, http.StatusOK, "Todo-service was not found. Please check your api-gateway"), ""))
+	if result[len(result)-1] {
+		result = append(result, checkResult(sendPostRequest(todoServiceURL, allTrue(result)), "Todo-service found with api-gateway."))
+	}
+	result = append(result, checkResult(checkHTTPStatus(notificationURL, http.StatusOK, "Notification-service was not found. Please check your api-gateway"), "Notification-service found with api-gateway."))
+	return result
+}
 
-		ctx := context.Background()
-		pubsubClient, err := pubsub.NewClient(ctx, project, option.WithCredentialsJSON(acc))
-		handleError(err, "Failed to create Pub/Sub client")
-		defer pubsubClient.Close()
-		message := createMessage(currentTime, id, name, hostName, user, osFamily, version, up, ip, pub)
+func handleSuccess(currentTime time.Time) {
+	log.Printf("🎉 Looks good! Please enter your StudentID and Full name below\n")
+	id, name := collectUserInfo()
+	hostName, user, osFamily, version, up, ip, pub := collectMachineInfo()
 
-		// Publish the message to the Pub/Sub topic
-		pub_status := publishMessage(ctx, pubsubClient, topic, message)
-		handleError(pub_status, "Failed to publish message")
+	acc, err := decryptJSON([]byte(notificationURL[0:32]))
+	handleError(err, "Failed to decrypt JSON")
 
-		log.Println("🎉🎉🎉 Congratulations! You have completed the activity 🎉🎉🎉")
-		log.Printf("⚠️ Don't forget! you still need to submit your assignment via MyCourseVille ⚠️\n")
+	ctx := context.Background()
+	pubsubClient, err := pubsub.NewClient(ctx, project, option.WithCredentialsJSON(acc))
+	handleError(err, "Failed to create Pub/Sub client")
+	defer pubsubClient.Close()
+	message := createMessage(currentTime, id, name, hostName, user, osFamily, version, up, ip, pub)
+
+	pub_status := publishMessage(ctx, pubsubClient, topic, message)
+	handleError(pub_status, "Failed to publish message")
+
+	log.Println("🎉🎉🎉 Congratulations! You have completed the activity 🎉🎉🎉")
+	log.Printf("⚠️ Don't forget! you still need to submit your assignment via MyCourseVille ⚠️\n")
+}
+
+func handleError(err error, message string) {
+	if err != nil {
+		log.Fatalf("%s: %v", message, err)
 	}
 }
 
@@ -106,12 +109,6 @@ func checkResult(err error, passMessage string) bool {
 		log.Printf("%s%s\n", successPrefix, passMessage)
 	}
 	return true
-}
-
-func handleError(err error, message string) {
-	if err != nil {
-		log.Fatalf("%s: %v", message, err)
-	}
 }
 
 func allTrue(arr []bool) bool {
