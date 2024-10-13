@@ -29,7 +29,8 @@ const (
 	localhost        = "http://localhost"
 	defaultNamespace = "default"
 	project          = "sds-grader"
-	topic            = "beta"
+	grader           = "grader"
+	topic            = "activity8"
 	successPrefix    = "✅  / "
 	errorPrefix      = "❌  X "
 	spacePrefix      = "    "
@@ -58,7 +59,10 @@ func checkAllServices() []bool {
 	result := []bool{
 		checkResult(checkNamespaceExists(namespace), "Namespace exists and can use kubectl command."),
 		checkResult(checkKubernetesResources(namespace), "All Kubernetes resources are up and running."),
+		checkResult(checkIngressExists(namespace), "Ingress resource exists in the namespace."),
 		checkResult(checkHTTPStatus(localhost, http.StatusOK, "Todo-service was not found via http://localhost. Please check your nginx-ingress service."), "Todo is up and running at http://localhost"),
+		checkResult(sendPostRequest(localhost, true), "POST request to http://localhost was successful."),
+		checkResult(sendGetRequest(localhost, grader), "GET request shows result from previous POST request to http://localhost."),
 	}
 	return result
 }
@@ -121,6 +125,24 @@ func checkKubernetesResources(namespace string) error {
 	}
 
 	return nil
+}
+
+func checkIngressExists(namespace string) error {
+	// Execute the kubectl command to get ingress resources
+	cmd := exec.Command("kubectl", "get", "ingress", "-n", namespace)
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to execute kubectl command: %v", err)
+	}
+
+	// Convert the output to a string
+	outputStr := string(output)
+
+	// Check if the output contains the word "ingress"
+	if strings.Contains(outputStr, "ingress") {
+		return nil
+	}
+	return fmt.Errorf("No ingress found in namespace %s", namespace)
 }
 
 func handleSuccess(currentTime time.Time) {
@@ -350,11 +372,30 @@ func sendPostRequest(url string, check bool) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		log.Println(spacePrefix + successPrefix + "POST request successful")
 	} else {
 		return fmt.Errorf(errorPrefix+"POST request failed with status: %d", resp.StatusCode)
 	}
 
 	return nil
+}
+
+func sendGetRequest(url, word string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("error sending GET request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("error reading response body: %v", err)
+	}
+
+	if strings.Contains(string(body), word) {
+		return nil
+	} else {
+		return fmt.Errorf("word '%s' not found in the response from %s", word, url)
+	}
 }
