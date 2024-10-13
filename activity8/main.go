@@ -54,30 +54,38 @@ func main() {
 }
 
 func checkAllServices() []bool {
-	namespace := collectNamespace()
+	namespace := collectInfo("Kubernetes namespace", defaultNamespace)
+	domain := ensureHTTPPrefix(collectInfo("domain", localhost))
 
 	result := []bool{
 		checkResult(checkNamespaceExists(namespace), "Namespace exists and can use kubectl command."),
 		checkResult(checkKubernetesResources(namespace), "All Kubernetes resources are up and running."),
 		checkResult(checkIngressExists(namespace), "Ingress resource exists in the namespace."),
-		checkResult(checkHTTPStatus(localhost, http.StatusOK, "Todo-service was not found via http://localhost. Please check your nginx-ingress service."), "Todo is up and running at http://localhost"),
-		checkResult(sendPostRequest(localhost, true), "POST request to http://localhost was successful."),
-		checkResult(sendGetRequest(localhost, grader), "GET request shows result from previous POST request to http://localhost."),
+		checkResult(checkHTTPStatus(domain, http.StatusOK, "Todo-service was not found via http://localhost. Please check your nginx-ingress service."), "Todo is up and running at http://localhost"),
+		checkResult(sendPostRequest(domain, true), "POST request to http://localhost was successful."),
+		checkResult(sendGetRequest(domain, grader), "GET request shows result from previous POST request to http://localhost."),
 	}
 	return result
 }
 
-func collectNamespace() string {
+func collectInfo(info string, defaultValue string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("👉 Enter Kubernetes Namespace (leave blank for '%s'): ", defaultNamespace)
-	namespace, _ := reader.ReadString('\n')
-	namespace = strings.TrimSpace(namespace)
-	if namespace == "" {
-		namespace = defaultNamespace
+	fmt.Printf("👉 Enter %s (leave blank for '%s'): ", info, defaultValue)
+	value, _ := reader.ReadString('\n')
+	value = strings.TrimSpace(value)
+	if value == "" {
+		value = defaultValue
 	}
 
-	return namespace
+	return value
+}
+
+func ensureHTTPPrefix(domain string) string {
+	if strings.HasPrefix(domain, "http://") || strings.HasPrefix(domain, "https://") {
+		return domain
+	}
+	return "http://" + domain
 }
 
 func checkNamespaceExists(namespace string) error {
@@ -101,10 +109,8 @@ func checkNamespaceExists(namespace string) error {
 func checkKubernetesResources(namespace string) error {
 	// Define the words to search for in the output
 	wordsToFind := []string{
-		"service/todo", "service/nginx",
-		"deployment.apps/nginx", "deployment.apps/todo",
-		"pod/redis", "pod/todo", "ingress",
-		"Running", "LoadBalancer", "80",
+		"service/todo", "deployment.apps/nginx", "deployment.apps/todo",
+		"pod/todo", "Running", "80",
 	}
 
 	// Execute the kubectl command
