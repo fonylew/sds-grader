@@ -62,6 +62,8 @@ func checkAllServices() []bool {
 		checkResult(checkKubernetesResources(namespace), "All Kubernetes resources are up and running."),
 		checkResult(checkIngressExists(namespace), "Ingress resource exists in the namespace."),
 		checkResult(checkHTTPStatus(domain, http.StatusOK, "Todo-service was not found via http://localhost. Please check your nginx-ingress service."), "Todo is up and running at http://localhost"),
+		checkResult(checkHTTPStatus(domain+":8000", http.StatusNotFound, "Todo service at http://localhost:8000 should be inaccessible. Please check your nginx-ingress service."), "Todo service is inaccessible at http://localhost:8000"),
+		checkResult(checkHTTPStatus(domain+":6379", http.StatusNotFound, "Redis service at http://localhost:6379 should be inaccessible. Please check your nginx-ingress service."), "Redis service is inaccessible at http://localhost:6379"),
 		checkResult(sendPostRequest(domain, true), "POST request to http://localhost was successful."),
 		checkResult(sendGetRequest(domain, grader), "GET request shows result from previous POST request to http://localhost."),
 	}
@@ -108,10 +110,7 @@ func checkNamespaceExists(namespace string) error {
 
 func checkKubernetesResources(namespace string) error {
 	// Define the words to search for in the output
-	wordsToFind := []string{
-		"service/todo", "deployment.apps/nginx", "deployment.apps/todo",
-		"pod/todo", "Running", "80",
-	}
+	wordsToFind := []string{"service/todo", "deployment.apps/todo", "pod/todo", "Running", "80"}
 
 	// Execute the kubectl command
 	cmd := exec.Command("kubectl", "get", "all", "-n", namespace)
