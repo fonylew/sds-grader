@@ -34,6 +34,38 @@ func CheckNetwork(networkName string) error {
 	return nil
 }
 
+func GetNetworkName(containerName string) (string, error) {
+	cmd := exec.Command("docker", "inspect", "-f", "'{{range $key, $value := .NetworkSettings.Networks}}{{$key}}{{end}}'", containerName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to get network name: %v", err)
+	}
+	return string(output), nil
+}
+
+func CheckContainersOnSameNetwork(containerNames []string) error {
+	if len(containerNames) < 2 {
+		return nil
+	}
+
+	firstNetwork, err := GetNetworkName(containerNames[0])
+	if err != nil {
+		return fmt.Errorf("error checking container network: %v", err)
+	}
+
+	for _, containerName := range containerNames[1:] {
+		currentNetwork, err := GetNetworkName(containerName)
+		if err != nil {
+			return fmt.Errorf("containers are on different network: %v", err)
+		}
+		if currentNetwork != firstNetwork {
+			return fmt.Errorf("Container %s is on network '%s', but should be on '%s'.", containerName, currentNetwork, firstNetwork)
+		}
+	}
+	log.Printf(SuccessPrefix+"All containers are on the same network: %s", firstNetwork)
+	return nil
+}
+
 func CheckRunningContainers(containerNames []string) error {
 	cmd := exec.Command("docker", "ps", "--format", "{{.Names}}")
 	output, err := cmd.CombinedOutput()
