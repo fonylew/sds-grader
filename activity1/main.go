@@ -12,7 +12,7 @@ const (
 	localhost = "http://localhost"
 	project   = "sds-grader"
 	grader    = "grader"
-	topic     = "activity1"
+	topic     = "activity1_cp"
 )
 
 //go:embed activity1.json.enc
