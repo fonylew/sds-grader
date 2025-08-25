@@ -39,6 +39,7 @@ func checkAllServices() []bool {
 
 	result := []bool{
 		common.CheckResult(common.CheckRunningContainers(containerNames), "All specified containers are running."),
+		common.CheckResult(common.CheckDockerComposeRunning(), "Docker compose is running."),
 		common.CheckResult(common.CheckContainersOnSameNetwork(containerNames), "All containers are on the same network."),
 		common.CheckResult(common.CheckHTTPStatus(domain+":3000", http.StatusOK, "Grafana was not found via http://localhost:3000. Please check your Grafana service."), "Grafana is up and running at http://localhost:3000"),
 		common.CheckResult(common.CheckHTTPStatus(domain+":9090", http.StatusOK, "Prometheus was not found via http://localhost:9090. Please check your Prometheus service."), "Prometheus is up and running at http://localhost:9090"),

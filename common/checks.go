@@ -66,6 +66,26 @@ func CheckContainersOnSameNetwork(containerNames []string) error {
 	return nil
 }
 
+func CheckDockerComposeRunning() error {
+	cmd := exec.Command("docker", "compose", "ls")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to run 'docker compose ls': %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	if len(lines) < 2 {
+		return fmt.Errorf("no docker compose projects found")
+	}
+
+	for _, line := range lines[1:] {
+		if strings.Contains(line, "running") {
+			return nil // Found at least one running project
+		}
+	}
+	return fmt.Errorf("no running docker compose projects found")
+}
+
 func CheckRunningContainers(containerNames []string) error {
 	cmd := exec.Command("docker", "ps", "--format", "{{.Names}}")
 	output, err := cmd.CombinedOutput()
