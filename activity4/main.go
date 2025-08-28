@@ -13,7 +13,7 @@ const (
 	defaultNamespace = "default"
 	project          = "sds-grader"
 	grader           = "grader"
-	topic            = "activity8"
+	topic            = "activity4"
 )
 
 //go:embed activity8.json.enc
