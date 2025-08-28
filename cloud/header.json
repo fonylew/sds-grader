@@ -1,0 +1,42 @@
+[
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP"
+  },
+  {
+    "name": "id",
+    "type": "INTEGER"
+  },
+  {
+    "name": "name",
+    "type": "STRING"
+  },
+  {
+    "name": "host",
+    "type": "STRING"
+  },
+  {
+    "name": "user",
+    "type": "STRING"
+  },
+  {
+    "name": "os",
+    "type": "STRING"
+  },
+  {
+    "name": "version",
+    "type": "STRING"
+  },
+  {
+    "name": "uptime",
+    "type": "INTEGER"
+  },
+  {
+    "name": "ip",
+    "type": "STRING"
+  },
+  {
+    "name": "pub_ip",
+    "type": "STRING"
+  }
+]
