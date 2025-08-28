@@ -18,10 +18,12 @@ const (
 	todoServiceURL  = "http://localhost:8000/todo"
 	notificationURL = "http://localhost:8000/notification"
 	project         = "sds-grader"
-	topic           = "activity3"
 )
 
-//go:embed activity7.json.enc
+// topic is the Pub/Sub topic name, which will be set at build time.
+var topic string
+
+//go:embed activity3.json.enc
 var encryptedServiceAccountJSON []byte
 
 func main() {

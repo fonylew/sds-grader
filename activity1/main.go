@@ -12,8 +12,10 @@ const (
 	localhost = "http://localhost"
 	project   = "sds-grader"
 	grader    = "grader"
-	topic     = "activity1_cp"
 )
+
+// topic is the Pub/Sub topic name, which will be set at build time.
+var topic string
 
 //go:embed activity1.json.enc
 var encryptedServiceAccountJSON []byte
