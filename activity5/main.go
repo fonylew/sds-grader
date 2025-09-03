@@ -13,10 +13,12 @@ const (
 	localhost = "http://localhost"
 	project   = "sds-grader"
 	grader    = "grader"
-	topic     = "activity5"
 )
 
-//go:embed activity9.json.enc
+// topic is the Pub/Sub topic name, which will be set at build time.
+var topic string
+
+//go:embed activity5.json.enc
 var encryptedServiceAccountJSON []byte
 
 func main() {

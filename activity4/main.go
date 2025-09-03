@@ -13,10 +13,12 @@ const (
 	defaultNamespace = "default"
 	project          = "sds-grader"
 	grader           = "grader"
-	topic            = "activity4"
 )
 
-//go:embed activity8.json.enc
+// topic is the Pub/Sub topic name, which will be set at build time.
+var topic string
+
+//go:embed activity4.json.enc
 var encryptedServiceAccountJSON []byte
 
 func main() {
