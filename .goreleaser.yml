@@ -28,19 +28,12 @@ builds:
     ldflags:
       - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
 
+archives:
+  - format: binary
+
 # The release section configures the GitHub release.
 release:
-  # The release name will be the same as the tag, e.g., v0.1.0-CP-activity1
+  # The release name will be the same as the tag, e.g., v0.1.0-activity1-CP
   name_template: '{{ .Tag }}'
   header: |
     ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
-
-# Configures the changelog generation.
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - 'Merge pull request'
-      - 'Merge branch'
