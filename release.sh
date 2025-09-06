@@ -9,8 +9,8 @@ set -e # Exit immediately if a command exits with a non-zero status.
 # Example: ./release.sh activity1 v0.1.0
 #
 # This will create and publish two GitHub releases with tags:
-# - v0.1.0-CP-activity1
-# - v0.1.0-CEDT-activity1
+# - v0.1.0-activity1-CP
+# - v0.1.0-activity1-CEDT
 
 # --- Input Validation ---
 if [ -z "$1" ] || [ -z "$2" ]; then
@@ -38,7 +38,7 @@ fi
 
 # --- Release Logic ---
 for TOPIC_SUFFIX in "${TOPIC_SUFFIXES[@]}"; do
-    TAG="${VERSION}-${TOPIC_SUFFIX}-${ACTIVITY_NAME}"
+    TAG="${VERSION}-${ACTIVITY_NAME}-${TOPIC_SUFFIX}"
 
     echo "================================================================================"
     echo "Preparing release for ${ACTIVITY_NAME} (${TOPIC_SUFFIX}) with tag ${TAG}"
