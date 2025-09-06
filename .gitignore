@@ -28,3 +28,5 @@ encrypt*
 encrypt.go
 *.enc
 *.json
+.DS_Store
+.idea/

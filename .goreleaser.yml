@@ -1,0 +1,46 @@
+version: 2
+project_name: '{{ .Env.ACTIVITY_NAME }}'
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+    main: './{{ .Env.ACTIVITY_NAME }}/'
+    binary: '{{ .Env.ACTIVITY_NAME }}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64
+      - goos: windows
+        goarch: arm64
+
+    # Inject the topic at build time
+    ldflags:
+      - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
+
+# The release section configures the GitHub release.
+release:
+  # The release name will be the same as the tag, e.g., v0.1.0-CP-activity1
+  name_template: '{{ .Tag }}'
+  header: |
+    ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
+
+# Configures the changelog generation.
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - 'Merge pull request'
+      - 'Merge branch'
