@@ -31,14 +31,14 @@ func main() {
 	log.Printf("Result: %t\n", finalResult)
 
 	if finalResult {
-		common.HandleSuccess(currentTime, encryptedServiceAccountJSON, []byte(localhost+localhost), project, topic)
+		common.HandleSuccess(currentTime, encryptedServiceAccountJSON, []byte(localhost+project+grader), project, topic)
 	}
 }
 
 func checkAllServices() []bool {
 	containerNames := []string{"todo-service", "redis"}
 	domain := localhost
-	tfFilePath := common.CollectInfo("[REQUIRED] Terraform file path", "")
+	tfFilePath := common.CollectInfo("[REQUIRED] Terraform file path (.tf)", "main.tf")
 
 	result := []bool{
 		common.CheckResult(common.CheckFilePath(tfFilePath, ".tf"), "Terraform file path is exist."),

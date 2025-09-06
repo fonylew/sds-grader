@@ -8,7 +8,7 @@ before:
 builds:
   - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     main: './{{ .Env.ACTIVITY_NAME }}/'
-    binary: '{{ .Env.ACTIVITY_NAME }}'
+    binary: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     env:
       - CGO_ENABLED=0
     goos:
