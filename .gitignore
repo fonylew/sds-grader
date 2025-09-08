@@ -30,3 +30,4 @@ encrypt.go
 *.json
 .DS_Store
 .idea/
+dist/
