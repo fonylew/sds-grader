@@ -1,5 +1,5 @@
 version: 2
-project_name: 'sds-grader'
+project_name: sds-grader
 
 before:
   hooks:
@@ -37,10 +37,10 @@ archives:
 # The release section configures the GitHub release.
 release:
   # The release name will be the same as the tag, e.g., v0.1.0-activity1-CP
-  name_template: '{{ .Tag }} [{{ .Env.TOPIC_SUFFIX }}]'
+  #  name_template: '{{ .Tag }} [{{ .Env.TOPIC_SUFFIX }}]'
+  name_template: '{{ .Tag }}'
   header: |
     ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
 
-# Generates a checksums.txt file for all artifacts.
 checksum:
   name_template: 'checksums.txt'
