@@ -8,7 +8,7 @@ before:
 builds:
   - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     main: './{{ .Env.ACTIVITY_NAME }}/'
-    binary:
+    binary: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     env:
       - CGO_ENABLED=0
     goos:
@@ -28,9 +28,12 @@ builds:
     ldflags:
       - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
 
+archives:
+  - format: binary
+
 # The release section configures the GitHub release.
 release:
   # The release name will be the same as the tag, e.g., v0.1.0-activity1-CP
-  name_template: '{{ .Tag }}'
+  name_template: '{{ .Tag }} [{{ .Env.TOPIC_SUFFIX }}]'
   header: |
     ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
