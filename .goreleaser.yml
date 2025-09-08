@@ -8,7 +8,7 @@ before:
 builds:
   - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     main: './{{ .Env.ACTIVITY_NAME }}/'
-    binary: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+    binary:
     env:
       - CGO_ENABLED=0
     goos:
@@ -27,9 +27,6 @@ builds:
     # Inject the topic at build time
     ldflags:
       - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
-
-archives:
-  - format: binary
 
 # The release section configures the GitHub release.
 release:
