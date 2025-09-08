@@ -1,5 +1,5 @@
 version: 2
-project_name: '{{ .Env.ACTIVITY_NAME }}'
+project_name: 'sds-grader'
 
 before:
   hooks:
@@ -29,7 +29,10 @@ builds:
       - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
 
 archives:
-  - format: binary
+  - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+    # This template creates a unique name for each binary artifact.
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
 
 # The release section configures the GitHub release.
 release:
@@ -37,3 +40,7 @@ release:
   name_template: '{{ .Tag }} [{{ .Env.TOPIC_SUFFIX }}]'
   header: |
     ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
+
+# Generates a checksums.txt file for all artifacts.
+checksum:
+  name_template: 'checksums.txt'
