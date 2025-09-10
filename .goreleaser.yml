@@ -1,5 +1,5 @@
 version: 2
-project_name: '{{ .Env.ACTIVITY_NAME }}'
+project_name: sds-grader
 
 before:
   hooks:
@@ -29,11 +29,18 @@ builds:
       - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
 
 archives:
-  - format: binary
+  - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+    # This template creates a unique name for each binary artifact.
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+    format: binary
 
 # The release section configures the GitHub release.
 release:
   # The release name will be the same as the tag, e.g., v0.1.0-activity1-CP
+  #  name_template: '{{ .Tag }} [{{ .Env.TOPIC_SUFFIX }}]'
   name_template: '{{ .Tag }}'
   header: |
     ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
+
+checksum:
+  name_template: 'checksums.txt'

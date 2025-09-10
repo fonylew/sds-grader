@@ -58,9 +58,9 @@ for TOPIC_SUFFIX in "${TOPIC_SUFFIXES[@]}"; do
     echo "Running GoReleaser..."
     goreleaser release --clean
 
-    # Push the new tag to the remote repository
-    echo "Pushing git tag to remote: ${TAG}"
-    git push origin "${TAG}"
+#    # Push the new tag to the remote repository
+#    echo "Pushing git tag to remote: ${TAG}"
+#    git push origin "${TAG}"
 
     echo "Release for ${TAG} completed successfully."
 done
