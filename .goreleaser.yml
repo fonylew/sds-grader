@@ -32,7 +32,7 @@ archives:
   - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
     # This template creates a unique name for each binary artifact.
     name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
-    format: binary
+    formats: ['binary']
 
 # The release section configures the GitHub release.
 release:
