@@ -31,3 +31,5 @@ encrypt.go
 .DS_Store
 .idea/
 dist/
+architecture.md
+reporting_test.go
