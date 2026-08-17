@@ -186,7 +186,7 @@ func CheckHTTPStatus(url string, expectedStatus int, errorMsg string) error {
 			return nil
 		}
 		log.Printf(SpacePrefix+ErrorPrefix+"Error checking URL %s: %v\n", url, err)
-		return fmt.Errorf(errorMsg)
+		return fmt.Errorf("%s", errorMsg)
 	}
 	defer resp.Body.Close()
 
@@ -195,7 +195,7 @@ func CheckHTTPStatus(url string, expectedStatus int, errorMsg string) error {
 		return nil
 	} else {
 		log.Printf(SpacePrefix+ErrorPrefix+"URL %s does not return %d. Status code: %d\n", url, expectedStatus, resp.StatusCode)
-		return fmt.Errorf(errorMsg)
+		return fmt.Errorf("%s", errorMsg)
 	}
 }
 

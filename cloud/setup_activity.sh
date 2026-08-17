@@ -1,30 +1,54 @@
 #!/bin/bash
 
+# Example usage:  ./setup_activity.sh activity1 sds-grader ../activity1 ./header.json
+
 # --- BigQuery Dataset Configuration ---
 # IMPORTANT: Update these variables with your actual class/major/semester/year
 class_id="2110415"    # e.g., "2110XXX"
 majors=("CEDT" "CP")  # Array of majors to set up for
 semester="1"          # e.g., "1 or 2"
-year="2025"           # e.g., "2025"
+year="2026"           # e.g., "2025"
 
-# --- User Input Prompts ---
-read -p "Enter the activity ID (e.g., activity1): " sa_name
-read -p "Enter your Google Cloud Project ID: " project_id
-read -p "Enter the directory to save the JSON key file (leave empty for current directory): " key_output_dir
-read -p "Enter the path to your BigQuery table schema JSON file (e.g., ./header.json): " schema_file_path
+# --- User Input / Command line Arguments ---
+# Usage: ./setup_activity.sh [activity_id] [project_id] [key_output_dir] [schema_file_path]
+sa_name="${1}"
+project_id="${2}"
+key_output_dir="${3}"
+schema_file_path="${4}"
 
-# --- Handle empty input ---
 if [ -z "$sa_name" ]; then
-    echo "Error: Service account ID cannot be empty. Exiting."
+    read -p "Enter the activity ID (e.g., activity1): " sa_name
+fi
+
+if [ -z "$project_id" ]; then
+    read -p "Enter your Google Cloud Project ID: " project_id
+fi
+
+# --- Handle empty input / defaults ---
+if [ -z "$sa_name" ]; then
+    echo "Error: Service account ID (Activity Name) cannot be empty. Exiting."
+    echo "Usage: $0 <activity_name> <project_id> [key_output_dir] [schema_file_path]"
     exit 1
 fi
+
+if [ -z "$project_id" ]; then
+    echo "Error: Google Cloud Project ID cannot be empty. Exiting."
+    echo "Usage: $0 <activity_name> <project_id> [key_output_dir] [schema_file_path]"
+    exit 1
+fi
+
 if [ -z "$key_output_dir" ]; then
-    key_output_dir="."
-    echo "No key output directory specified. Key file will be saved in the current directory."
+    read -p "Enter the directory to save the JSON key file (leave empty for current directory '.'): " key_output_dir
+    if [ -z "$key_output_dir" ]; then
+        key_output_dir="."
+    fi
 fi
 
 if [ -z "$schema_file_path" ]; then
-    schema_file_path="./header.json"
+    read -p "Enter the path to your BigQuery table schema JSON file (leave empty for './header.json'): " schema_file_path
+    if [ -z "$schema_file_path" ]; then
+        schema_file_path="./header.json"
+    fi
 fi
 
 # --- Main Script Logic ---
@@ -84,6 +108,22 @@ else
         exit 1
     fi
     echo "Pub/Sub Publisher role granted successfully."
+fi
+
+# --- 2b. Grant BigQuery permissions to Pub/Sub Service Account ---
+echo "Ensuring Google Pub/Sub service account has BigQuery permissions..."
+project_number=$(gcloud projects describe "${project_id}" --format="value(projectNumber)" 2>/dev/null)
+if [ -n "${project_number}" ]; then
+    pubsub_sa="service-${project_number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+    echo "Granting BigQuery Data Editor and Metadata Viewer roles to ${pubsub_sa}..."
+    gcloud projects add-iam-policy-binding "${project_id}" \
+        --member="serviceAccount:${pubsub_sa}" \
+        --role="roles/bigquery.dataEditor" \
+        --condition=None > /dev/null 2>&1 || true
+    gcloud projects add-iam-policy-binding "${project_id}" \
+        --member="serviceAccount:${pubsub_sa}" \
+        --role="roles/bigquery.metadataViewer" \
+        --condition=None > /dev/null 2>&1 || true
 fi
 
 # --- 3. Create JSON Service Account Key ---
