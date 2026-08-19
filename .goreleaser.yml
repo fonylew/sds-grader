@@ -6,9 +6,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+  - id: '{{ .Env.ACTIVITY_NAME }}-CP'
     main: './{{ .Env.ACTIVITY_NAME }}/'
-    binary: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
+    binary: '{{ .Env.ACTIVITY_NAME }}-CP'
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,24 +23,72 @@ builds:
         goarch: arm64
       - goos: windows
         goarch: arm64
-
-    # Inject the topic at build time
     ldflags:
-      - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_{{ .Env.TOPIC_SUFFIX }}
+      - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_CP
+
+  - id: '{{ .Env.ACTIVITY_NAME }}-CEDT'
+    main: './{{ .Env.ACTIVITY_NAME }}/'
+    binary: '{{ .Env.ACTIVITY_NAME }}-CEDT'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.topic={{ .Env.ACTIVITY_NAME }}_CEDT
 
 archives:
-  - id: '{{ .Env.ACTIVITY_NAME }}-{{ .Env.TOPIC_SUFFIX }}'
-    # This template creates a unique name for each binary artifact.
+  - id: '{{ .Env.ACTIVITY_NAME }}'
     name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
     formats: ['binary']
 
 # The release section configures the GitHub release.
 release:
-  # The release name will be the same as the tag, e.g., v0.1.0-activity1-CP
   name_template: '{{ .Tag }}'
   mode: replace
   header: |
-    ## Grader for {{ .Env.ACTIVITY_NAME }} ({{ .Env.TOPIC_SUFFIX }})
+    # Grader for {{ .Env.ACTIVITY_NAME }} (both CP & CEDT)
+    See detail of activity in mycourseville.com
+    
+    ## Available Artifacts
+    - **`{{ .Env.ACTIVITY_NAME }}-CP_*`**: Grader binary for Computer Engineering (CP) students.
+    - **`{{ .Env.ACTIVITY_NAME }}-CEDT_*`**: Grader binary for Computer Engineering & Digital Technology (CEDT) students.
+    
+    # How to run
+    Run the following command on the terminal that can run `docker` command:
+      ```
+      chmod +x activity1-[CP/CEDT]_[platform]
+      ./activity1-[CP/CEDT]_[platform]-[platform]
+      ```
+    - For **Windows** users, please run the `.exe` file in the **Windows PowerShell** or **Command Prompt** terminal. The program will not show anything by double clicking the file. If you are using **WSL (Ubuntu)** for terminal, please use `linux` binary instead.
+    - For **MacOS** users (`darwin` architecture) , you might run into the security pop-up that prevents running third-party executable file. Please go to `Settings -> Privacy & Security`  to review and allow the app. Then re-run the binary again. (See image below)
+      - For MacOS with Apple Silicon (M series) use `activity1-[CP/CEDT]_darwin_arm64`.
+      - For MacOS with Intel use `activity1-[CP/CEDT]_darwin_amd64`.
+    - Please **download and use the executable file from this release page only**. Do not compile project by yourself because you will experience missing embed file error.
+
+  footer: |
+    | Platform       | CPU           | Architecture | Binary                           |
+    |----------------|---------------|--------------|----------------------------------|
+    | Linux          | *             | amd64        | activityN-XXXX_linux_amd64       |
+    | MacOS (darwin) | Apple Silicon (M) | arm64        | activityN-XXXX_darwin_arm64      |
+    | MacOS (darwin) | Intel         | amd64        | activityN-XXXX_darwin_amd64      |
+    | Windows        | *             | amd64        | activityN-XXXX_windows_amd64.exe |
+    
+    ⚠️ **PLEASE NOTE THAT YOU STILL NEED TO SUBMIT YOUR ASSIGNMENT IN MYCOURSEVILLE** ⚠️
+    -----
+    If you experience any issue, please reach out to TA team on the private Slack channel in SDS Discord server.
+    
+    Reference image for allowing permission in Settings -> Privacy & Security and scroll down in MacOS
+    <img width="714" height="224" alt="image" src="https://github.com/user-attachments/assets/9ca49cf2-8cf0-476b-aaac-149a06cbc642" />
 
 checksum:
   name_template: 'checksums_{{ .Tag }}.txt'
