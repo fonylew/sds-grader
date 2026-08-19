@@ -1,2 +1,3 @@
 # sds-grader
-Grader for Software Defined System
+
+Grader for Software Defined Systems (SDS) class activities.

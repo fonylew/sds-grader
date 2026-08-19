@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Example usage:  ./setup_activity.sh activity1 sds-grader ../activity1 ./header.json
-
 # --- BigQuery Dataset Configuration ---
 # IMPORTANT: Update these variables with your actual class/major/semester/year
 class_id="2110415"    # e.g., "2110XXX"
@@ -11,6 +9,7 @@ year="2026"           # e.g., "2025"
 
 # --- User Input / Command line Arguments ---
 # Usage: ./setup_activity.sh [activity_id] [project_id] [key_output_dir] [schema_file_path]
+# Example usage:  ./setup_activity.sh activity1 [project_id] ../activity1 ./header.json
 sa_name="${1}"
 project_id="${2}"
 key_output_dir="${3}"
